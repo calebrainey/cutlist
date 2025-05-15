@@ -1,9 +1,13 @@
 from typing import List, Optional
+from rich.table import Table
+from rich.console import Console
 
 import typer
 from typing_extensions import Annotated
 
 from board import Board
+
+console = Console()
 
 def parse_cuts(cuts):
     cut_list = []
@@ -39,9 +43,16 @@ def main():
             new_board.add_cut(cut)
             boards.append(new_board)
     
+    table = Table(title="\nFinal Cutlist", title_style="bold italic")
+
+    table.add_column("Board #", style="cyan")
+    table.add_column("Cuts", style="green")
+    table.add_column("Waste (in.)", style="red")
+
     for idx, board in enumerate(boards, start=1):
-        print(f"Board {idx}: {board.cuts}")
-        print(f"Waste: {board.remaining}")
+        table.add_row(f"Board {str(idx)} ({board.length}\")", f"{board.cuts}", f"{board.remaining}\"")
+
+    console.print(table)
 
 if __name__ == "__main__":
     typer.run(main)
