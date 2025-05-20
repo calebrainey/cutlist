@@ -1,6 +1,7 @@
-from typing import List, Optional
 from rich.table import Table
 from rich.console import Console
+
+from fractions import Fraction
 
 import typer
 from typing_extensions import Annotated
@@ -9,12 +10,30 @@ from board import Board, AVAILABLE_BOARD_LENGTHS
 
 console = Console()
 
+def get_fraction(size):
+    try:
+        size = size.strip()
+        if " " in size:
+            whole, fraction = size.split(" ")
+            numerator, denominator = fraction.split("/")
+            decimal = float(whole) + float(numerator) / float(denominator)
+        elif "/" in size:
+            numerator, denominator = size.split("/")
+            decimal = float(numerator) / float(denominator)
+        else:
+            decimal = float(size)
+        
+        return decimal
+        
+    except:
+        raise ValueError(f"Invalid fraction size format: {size}")
+
 def parse_cuts(cuts):
     cut_list = []
     try:
         for cut in cuts:
             size, qty = cut.split(":")
-            cut_list.extend([float(size)] * int(qty))
+            cut_list.extend([get_fraction(size)] * int(qty))
         cut_list.sort(reverse=True)
         return cut_list
     except Exception as e:
@@ -55,7 +74,6 @@ def main():
         try:
             if entry:
                 size, qty = entry.split(":")
-                float(size)
                 int(qty)
             else:
                 break
