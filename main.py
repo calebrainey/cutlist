@@ -41,28 +41,34 @@ def parse_cuts(cuts):
         console.print(f"[yellow]Hint: Use the format length:quantity, like 24:3 or 18.5:2[/yellow]")
         raise typer.Exit(code=1)
 
-def greedy_algo(cut_list: list, stock_length):
-    boards = []
-    for cut in cut_list:
-        cut_placed = False
-        for board in boards:
-            if board.add_cut(cut):
-                cut_placed = True
-                break
-        
-        if not cut_placed:
-            new_board = Board(stock_length)
-            new_board.add_cut(cut)
-            boards.append(new_board)
+def greedy_algo(cut_list: list, board_list):
+    board_to_use = 0
+    cuts_to_make = len(cut_list)
 
-    return boards
+    for cut in cut_list:
+        cut_made = False
+
+        for board in board_list:
+            if board.can_fit(cut):
+                board.add_cut(cut)
+                cut_made = True
+                break
+    
+    used_boards = [board for board in board_list if board.cuts]
+    return used_boards
 
 def main():
     use_custom = typer.confirm('Do you know the board length you want to use?', default=True)
     if use_custom:
-        stock_length = typer.prompt("Enter stock length (in inches)", type=float)
+        stock_lengths = typer.prompt("Enter stock length (in inches).\nSeparate multiple boards with a comma")
+        if "," in stock_lengths:
+            stock_lengths = stock_lengths.split(",")
+            stock_lengths = sorted([float(length) for length in stock_lengths], reverse=True)
+            stock_boards = [Board(length) for length in stock_lengths]
+        elif stock_lengths:
+            stock_boards = Board(stock_lengths)
     else:
-        stock_length = None
+        stock_boards = None
     
     cuts = []    
     
@@ -87,54 +93,61 @@ def main():
 
     boards = None
 
-    if stock_length:
-        boards = greedy_algo(cut_list, stock_length)
+    if stock_boards:
+        simulated_boards = greedy_algo(cut_list, stock_boards)
     else:
-        best_boards = None
-        best_board_length = None
-        fewest_boards = float('inf')
-        least_waste = None
+        # best_boards = None
+        # best_board_length = None
+        # fewest_boards = float('inf')
+        # least_waste = None
         
-        for size in AVAILABLE_BOARD_LENGTHS:
-            simulated_boards = greedy_algo(cut_list, size)
-            
-            total_waste = sum(board.waste for board in simulated_boards)
+        available_board_lengths = sorted(AVAILABLE_BOARD_LENGTHS, reverse=True)
+        boards = [Board(length) for length in available_board_lengths]
 
-            if len(simulated_boards) < fewest_boards:
-                best_boards = simulated_boards
-                best_board_length = size
-                fewest_boards = len(simulated_boards)
-                least_waste = total_waste
-            elif len(simulated_boards) == fewest_boards and total_waste < least_waste:
-                best_boards = simulated_boards
-                best_board_length = size
-                fewest_boards = len(simulated_boards)
-                least_waste = total_waste
+        simulated_boards = greedy_algo(cut_list, boards)
         
-        boards = best_boards
-        stock_length = best_board_length
+
+        # for board in boards:
+        #     board = [board]
+        #     simulated_boards = greedy_algo(cut_list, board)
+            
+        #     total_waste = sum(board.waste for board in simulated_boards)
+
+        #     if len(simulated_boards) < fewest_boards:
+        #         best_boards = simulated_boards
+        #         best_board_length = board
+        #         fewest_boards = len(simulated_boards)
+        #         least_waste = total_waste
+        #     elif len(simulated_boards) == fewest_boards and total_waste < least_waste:
+        #         best_boards = simulated_boards
+        #         best_board_length = board
+        #         fewest_boards = len(simulated_boards)
+        #         least_waste = total_waste
+        
+        # boards = best_boards
+        # stock_lengths = best_board_length
 
     # Start table render
     table = Table(title="\nFinal Cutlist", title_style="bold italic", show_footer=True)
 
     table.add_column("Board #", style="cyan", footer_style="bold")
     table.add_column("Cuts", style="green", footer_style="bold")
-    table.add_column("Waste (in.)", style="red", footer_style="bold")
+    table.add_column("Unused Board (in.)", style="red", footer_style="bold")
 
-    for idx, board in enumerate(boards, start=1):
+    for idx, board in enumerate(simulated_boards, start=1):
         table.add_row(f"Board {idx} ({board.length}\")", f"{board.cuts}", f"{board.remaining}\"")
 
     cut_sum = 0
     waste_sum = 0 
 
-    for board in boards:
+    for board in simulated_boards:
         for cut in board.cuts:
             cut_sum += 1
         waste_sum += board.waste
 
-    table.columns[0].footer = f"Total Boards: {len(boards)}"
+    table.columns[0].footer = f"Total Boards: {len(simulated_boards)}"
     table.columns[1].footer = f"Total Cuts: {cut_sum}"
-    table.columns[2].footer = f"Total Waste: {waste_sum}"
+    table.columns[2].footer = f"Total Unused: {waste_sum}"
     
     console.print(table)
 

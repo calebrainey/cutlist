@@ -5,7 +5,7 @@ class Board:
         self.length = length
         self.cuts = []
         self.remaining = length
-        self.kerf = 0.125
+        # self.kerf = 0.125
 
     def can_fit(self, cut: float):
         return self.remaining >= cut
@@ -14,8 +14,8 @@ class Board:
         if self.can_fit(cut):
             self.cuts.append(cut)
             self.remaining -= cut
-            if len(self.cuts) > 1:
-                self.remaining -= self.kerf
+            # if len(self.cuts) > 1:
+            #     self.remaining -= self.kerf
             return True
         return False
     
